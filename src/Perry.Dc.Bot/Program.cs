@@ -12,11 +12,17 @@ internal static class Program
         }
 
         using var cancellationSource = new CancellationTokenSource();
-        Console.CancelKeyPress += (_, eventArgs) =>
+        ConsoleCancelEventHandler cancelKeyPressHandler = (_, eventArgs) =>
         {
             eventArgs.Cancel = true;
             cancellationSource.Cancel();
         };
+        EventHandler processExitHandler = (_, _) => cancellationSource.Cancel();
+        Action<System.Runtime.Loader.AssemblyLoadContext> unloadingHandler = _ => cancellationSource.Cancel();
+
+        Console.CancelKeyPress += cancelKeyPressHandler;
+        AppDomain.CurrentDomain.ProcessExit += processExitHandler;
+        System.Runtime.Loader.AssemblyLoadContext.Default.Unloading += unloadingHandler;
 
         await using var bot = new DiscordBotApplication(token);
         await bot.RunAsync(cancellationSource.Token);
